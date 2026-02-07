@@ -7,4 +7,5 @@ Select the link that is returned and you will be able to play our game from ther
 
 Hope you enjoy! And huge thanks to Nicky Case for the inspiration.
 
-t`](https://typescript-eslint.io) in your project.
+Also, here is a demo if you would like to check it out without installation!
+https://youtu.be/TR3J2UGBol8
