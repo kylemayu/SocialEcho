@@ -1,4 +1,10 @@
 import { useEffect, useState, useRef } from "react";
+const SCENES = {
+  INTRO: "intro",
+  GAMEPLAY: "gameplay",
+  ENDING: "ending",
+};
+
 
 // Settings for our simulation
 const PEOPLE_COUNT = 35;
@@ -50,10 +56,8 @@ const trendNames = {
 
 // Spread a trend to other people (or reject it)
 function spreadTrend(people, targetTrend, viral) {
-  let newPeople = [];
+ let newPeople = [];
 
-  for (let i = 0; i < people.length; i++) {
-    let person = people[i];
 
     if (viral) {
       // Popular trend: grey people copy it
@@ -67,11 +71,27 @@ function spreadTrend(people, targetTrend, viral) {
       }
     }
 
-    newPeople.push(person);
-  }
 
-  return newPeople;
+   if (viral) {
+     // Popular trend: grey people copy it
+     if (person.trend === "#777") {
+       person = { ...person, trend: targetTrend };
+     }
+   } else {
+     // Flopped trend: people abandon it
+     if (person.trend === targetTrend) {
+       person = { ...person, trend: "#777" };
+     }
+   }
+
+
+   newPeople.push(person);
+ }
+
+
+ return newPeople;
 }
+
 
 // Count how many grey people
 function countGrey(people) {
@@ -95,6 +115,7 @@ function randomTrend() {
   const randomIndex = Math.floor(Math.random() * trends.length);
   return trends[randomIndex];
 }
+
 
 function createPerson(id) {
   return {
@@ -147,9 +168,19 @@ function Person({ person, conformity, frozen, focused, onCapture, showSad }) {
   );
 }
 
+
 // Function to get the dominant trend and its percentage
 function getTrendAndPercentage(people) {
-  let trendCounts = {};
+ let trendCounts = {};
+ for (let i = 0; i < people.length; i++) {
+   let trend = people[i].trend;
+   if (trend === "#777") continue; // skip grey
+   if (!trendCounts[trend]) {
+     trendCounts[trend] = 1;
+   } else {
+     trendCounts[trend]++;
+   }
+ }
 
   for (let i = 0; i < people.length; i++) {
     let trend = people[i].trend;
@@ -164,19 +195,47 @@ function getTrendAndPercentage(people) {
   let dominantTrend = "none";
   let maxCount = 0;
 
-  for (let color in trendCounts) {
-    if (trendCounts[color] > maxCount) {
-      maxCount = trendCounts[color];
-      dominantTrend = color;
-    }
-  }
 
   // Always calculate percentage, even for "none"
   let percentage = Math.round((maxCount / people.length) * 100);
 
-  return { trend: dominantTrend, percentage: percentage };
+
+ return { trend: dominantTrend, percentage: percentage };
 }
 
+
+function StartScene({onBegin}) {
+  return (
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#000", // temporary
+      }}
+    >
+      <ImageButton
+        normal="/start-unpush.png"
+        pushed="/start-push.png"
+        onClick={onBegin}
+        width={220}
+      />
+    </div>
+  );
+}
+
+function EndScene({onPlayAgain, onExit }) {
+  return (
+    <div style={{ padding: 40, textAlign: "center" }}>
+      <h1>END (TEMP)</h1>
+      <button onClick={onPlayAgain}>Play Again</button>
+      <br /><br />
+      <button onClick={onExit}>Exit to Intro</button>
+    </div>
+  );
+}
 // Main app
 export default function App() {
   const [people, setPeople] = useState([]);
@@ -247,10 +306,11 @@ export default function App() {
       setShowSad(true); // Sad images
     }
 
-    // Instagram overlay position
-    const world = worldRef.current.getBoundingClientRect();
-    const centerX = (person.x / 100) * world.width + PERSON_SIZE / 2;
-    const centerY = (person.y / 100) * world.height + PERSON_SIZE / 2;
+   // Instagram overlay position
+   const world = worldRef.current.getBoundingClientRect();
+   const centerX = (person.x / 100) * world.width + PERSON_SIZE / 2;
+   const centerY = (person.y / 100) * world.height + PERSON_SIZE / 2;
+
 
     // Fake engagement
     let likes;
@@ -263,13 +323,14 @@ export default function App() {
       comments = ["ew", "absolutely not", "this is sad"];
     }
 
-    setCaptureUI({
-      x: centerX,
-      y: centerY,
-      likes: likes,
-      comments: comments,
-      viral: viral,
-    });
+   setCaptureUI({
+     x: centerX,
+     y: centerY,
+     likes: likes,
+     comments: comments,
+     viral: viral,
+   });
+
 
     setTimeout(() => {
       const updatedPeople = spreadTrend(people, person.trend, viral);
@@ -286,12 +347,51 @@ export default function App() {
     }, FREEZE_DURATION);
   }
 
-  // Calculate current trend info
-  const trendInfo = getTrendAndPercentage(people);
-  const dominantTrend = trendInfo.trend;
-  const trendPercentage = trendInfo.percentage;
+  function beginGame() {
+  resetGame();
+  setScene(SCENES.GAMEPLAY);
+}
+
+function exitGame() {
+  setScene(SCENES.ENDING);
+}
+
+function playAgain() {
+  resetGame();
+  setScene(SCENES.GAMEPLAY);
+}
+
+function resetGame() {
+  const resetPeople = [];
+  for (let i = 0; i < PEOPLE_COUNT; i++) {
+    resetPeople.push(createPerson(i));
+  }
+  setPeople(resetPeople);
+  setSociety({conformity:0});
+  setFrozen(false);
+  setFocusedId(null);
+  setNarration("Click someone to take a picture.");
+  setCaptureUI(null);
+}
+
+function ImageButton({ normal, pushed, onClick, width = 200 }) {
+  const [isPushed, setIsPushed] = useState(false);
 
   return (
+    <img
+      src={isPushed ? pushed : normal}
+      alt="button"
+      style={{
+        width,
+        cursor: "pointer",
+        userSelect: "none",
+      }}
+      onMouseDown={() => setIsPushed(true)}
+      onMouseUp={() => setIsPushed(false)}
+      onMouseLeave={() => setIsPushed(false)}
+      onClick={onClick}
+      draggable={false}
+    />
     <div className="container">
     <p className="status">{narration}</p>
 
@@ -407,4 +507,137 @@ export default function App() {
     </p>
     </div>
   );
+}
+
+ // Calculate current trend info
+ const trendInfo = getTrendAndPercentage(people);
+ const dominantTrend = trendInfo.trend;
+ const trendPercentage = trendInfo.percentage;
+
+
+ return (
+   <div className="container">
+    {scene === SCENES.INTRO &&  (
+      <StartScene onBegin={beginGame}/>
+    )}
+
+    {scene === SCENES.GAMEPLAY && (
+      <button
+    style={{ position: "absolute", top: 10, right: 10, zIndex: 100 }}
+    onClick={exitGame}
+      >
+        Exit
+      </button>
+    )}
+
+    {scene === SCENES.ENDING && (
+      <EndScene onPlayAgain={playAgain} onExit={() => setScene(SCENES.INTRO)}/>
+    )}
+     <p className="status">{narration}</p>
+
+
+     <div
+       ref={worldRef}
+       className="world"
+       style={{
+         transform: frozen ? "scale(1.15)" : "scale(1)",
+         transition: "transform 0.3s ease",
+         position: "relative",
+       }}
+     >
+       {people.map((p) => (
+         <Person
+           key={p.id}
+           person={p}
+           conformity={society.conformity}
+           frozen={frozen}
+           focused={p.id === focusedId}
+           onCapture={capture}
+         />
+       ))}
+
+
+       {captureUI && (
+         <div
+           style={{
+             position: "absolute",
+             left: captureUI.x,
+             top: captureUI.y + 25,
+             transform: "translate(-50%, -50%)",
+             pointerEvents: "none",
+             zIndex: 20,
+             animation: "pop 0.25s ease-out",
+           }}
+         >
+           <img
+             src="/instagram-frame.png"
+             alt="capture frame"
+             style={{ width: FRAME_SIZE, height: FRAME_SIZE, display: "block" }}
+           />
+
+
+           <div style={{ textAlign: "left", marginTop: 6 }}>
+             <div
+               style={{
+                 color: "black",
+                 fontSize: 14,
+                 display: "flex",
+                 alignItems: "left",
+                 justifyContent: "center",
+                 gap: 4,
+               }}
+             >
+               <img
+                 src={captureUI.viral ? "/instagram-like.png" : "/instagram-dislike.png"}
+                 alt={captureUI.viral ? "like" : "dislike"}
+                 style={{ width: 16, height: 16 }}
+               />
+               {captureUI.likes.toLocaleString()}
+             </div>
+
+
+             <div style={{ fontSize: 12, opacity: 0.9, color: "black" }}>
+               {captureUI.comments.slice(0, 2).map((c, i) => (
+                 <div
+                   key={i}
+                   style={{
+                     display: "flex",
+                     alignItems: "center",
+                     justifyContent: "center",
+                     gap: 4,
+                     marginTop: 2,
+                   }}
+                 >
+                   <img
+                     src="/instagram-comment.png"
+                     alt="comment"
+                     style={{ width: 14, height: 14 }}
+                   />
+                   {c}
+                 </div>
+               ))}
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+
+
+     <p className="status">
+       Current Trend:{" "}
+       <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+         <span
+           style={{
+             display: "inline-block",
+             width: 16,
+             height: 16,
+             backgroundColor: dominantTrend,
+             border: "1px solid white",
+           }}
+         />
+         {dominantTrend} ({trendPercentage}%)
+       </span>
+     </p>
+   </div>
+ );
 }
