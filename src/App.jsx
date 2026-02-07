@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const PEOPLE_COUNT = 50;
 const FREEZE_DURATION = 3000;
+const PERSON_SIZE = 20;
+const FRAME_SIZE = 120;
 
 function spreadColor(people, targetColor, viral) {
   return people.map((p) => {
@@ -105,15 +107,30 @@ function Person({ person, conformity, frozen, focused, onCapture }) {
 
 export default function App() {
   const [people, setPeople] = useState(
+  
     Array.from({ length: PEOPLE_COUNT }, (_, i) => createPerson(i))
   );
 
-  const [society, setSociety] = useState({ conformity: 0 });
+  const [society, setSociety] = useState({
+    uniqueness: 1,
+    conformity: 0
+  });
+
+ const [postVisible, setVisibility] = useState(false);
+ const [currPost, setCurrPost] = useState({
+    caption: "", likes: "", comments: []
+  });
+
+  const [captureUI, setCaptureUI] = useState(null);
+  
+
   const [frozen, setFrozen] = useState(false);
   const [focusedId, setFocusedId] = useState(null);
   const [narration, setNarration] = useState(
     "Click someone to take a picture."
   );
+  const worldRef = useRef(null);
+
 
   // --- Movement loop ---
   useEffect(() => {
@@ -132,8 +149,79 @@ export default function App() {
     return () => clearInterval(interval);
   }, [frozen]);
 
-  // --- Capture logic ---
+   const post = () => {
+    const viral = Math.random() < 0.5;
+    const likes = viral ? Math.floor(Math.random() * 2000000 + 1000000)
+    :  Math.floor(Math.random() * 20 + 1);
+
+    setCurrPost({
+      caption: viral ? "Did I eat?" : "Why follow trends when you can make them?",
+      likes, comments: viral ? ["this is hot", "Obsessed", "oh I'm stealing"]
+      : ["nobody moved...", "yeah, no", "do us all a favor and stop"]
+    });
+
+    if (viral) {
+      setSociety(s => ({
+        uniqueness: Math.max(0, s.uniqueness - 0.1),
+        conformity: Math.max(1, s.conformity + 0.1),
+      }));
+    }
+    setVisibility(true);
+  };
+
   function capture(person) {
+    if (frozen) return;
+
+    setFrozen(true);
+    setFocusedId(person.id);
+
+    const appeal = person.trendiness * (1 - society.conformity);
+    const viral = Math.random() < appeal;
+    const world = worldRef.current.getBoundingClientRect();
+    const centerX =
+      (person.x / 100) * world.width + PERSON_SIZE / 2;
+
+    const centerY =
+      (person.y / 100) * world.height + PERSON_SIZE / 2;
+
+    const likes = viral
+      ? Math.floor(Math.random() * 2000000 + 1000000)
+      : Math.floor(Math.random() * 20 + 1);
+
+    const comments = viral
+      ? ["this is hot", "Obsessed", "oh I'm stealing"]
+      : ["nobody moved...", "yeah, no", "yeah this ain't it"];
+
+    setNarration(viral ? "They love this trend." : "They reject this trend.");
+
+    setPeople((ps) => spreadColor(ps, person.color, viral));
+
+    setSociety((s) => ({
+      conformity: Math.min(1, s.conformity + (viral ? 0.12 : 0.04)),
+    }));
+
+    // 🔥 NEW: show Instagram overlay
+    setCaptureUI({
+      x: centerX,
+      y: centerY,
+      likes,
+      comments,
+      viral
+    });
+
+    setTimeout(() => {
+      setFrozen(false);
+      setFocusedId(null);
+      setNarration("Click someone to take a picture.");
+      setCaptureUI(null); // remove overlay
+    }, FREEZE_DURATION);
+}
+
+  const takePicture = () => {
+    post();
+  };
+  // --- Capture logic ---
+  function zoom(person) {
     if (frozen) return;
 
     setFrozen(true);
@@ -166,10 +254,11 @@ export default function App() {
       <p className="status">{narration}</p>
 
       <div
+        ref={worldRef}
         className="world"
         style={{
-          transform: frozen ? "scale(1.15)" : "scale(1)",
-          transition: "transform 0.3s ease",
+        transform: frozen ? "scale(1.15)" : "scale(1)",
+        transition: "transform 0.3s ease",
         }}
       >
         {people.map((p) => (
@@ -182,8 +271,44 @@ export default function App() {
             onCapture={capture}
           />
         ))}
+   {captureUI && (
+  <div
+    style={{
+      position: "absolute",
+      left: captureUI.x,
+      top: captureUI.y + 25,
+      transform: "translate(-50%, -50%)",
+      pointerEvents: "none",
+      zIndex: 20,
+      animation: "pop 0.25s ease-out",
+    }}
+  >
+    {/* FRAME (this is what gets centered) */}
+    <img
+      src="/instagram-frame.png"
+      alt="capture frame"
+      style={{
+        width: FRAME_SIZE,
+        height: FRAME_SIZE,
+        display: "block",
+      }}
+    />
+
+    {/* META floats below, does NOT affect centering */}
+    <div style={{ textAlign: "center", marginTop: 6 }}>
+      <div style={{ color: "white", fontSize: 14 }}>
+        ❤️ {captureUI.likes.toLocaleString()}
       </div>
 
+      <div style={{ fontSize: 12, opacity: 0.9 }}>
+        {captureUI.comments.slice(0, 2).map((c, i) => (
+          <div key={i}>💬 {c}</div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
+    </div>
       <p className="status">
         Conformity: {(society.conformity * 100).toFixed(0)}% | Current Trend:{" "}
         <span
