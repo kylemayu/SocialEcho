@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 // Settings for our simulation
 const PEOPLE_COUNT = 35;
 const FREEZE_DURATION = 3000;
-const PERSON_SIZE = 20;
+const PERSON_SIZE = 85;
 const FRAME_SIZE = 120;
 
 const trendImages = {
@@ -17,7 +17,35 @@ const trendImages = {
   scarf: "/happy_scarf.png",
   sunglasses: "/happy_glasses.png",
   tophat: "/happy_tophat.png",
-  none: "/shocked.png"
+  none: "/sad.png"
+};
+
+const sadTrendImages = {
+  baseball: "/sad_cap.png",
+  cape: "/sad_cape.png",
+  crown: "/sad_crown.png",
+  handbag: "/sad_handbag.png",
+  mohawk: "/sad_mohawk.png",
+  mustache: "/sad_mustache.png",
+  ponytail: "/sad_ponytail.png",
+  scarf: "/sad_scarf.png",
+  sunglasses: "/sad_glasses.png",
+  tophat: "/sad_tophat.png",
+  none: "/sad.png"
+};
+
+const trendNames = {
+  baseball: "Baseball Caps",
+  cape: "Capes",
+  crown: "Crowns",
+  handbag: "Handbags",
+  mohawk: "Mohawks",
+  mustache: "Mustaches",
+  ponytail: "Ponytails",
+  scarf: "Scarves",
+  sunglasses: "Sunglasses",
+  tophat: "Top Hats",
+  none: "Nothing..."
 };
 
 // Spread a trend to other people (or reject it)
@@ -29,13 +57,13 @@ function spreadTrend(people, targetTrend, viral) {
 
     if (viral) {
       // Popular trend: grey people copy it
-      if (person.trend === "#777") {
+      if (person.trend === "none") {
         person = { ...person, trend: targetTrend };
       }
     } else {
       // Flopped trend: people abandon it
       if (person.trend === targetTrend) {
-        person = { ...person, trend: "#777" };
+        person = { ...person, trend: "none" };
       }
     }
 
@@ -49,14 +77,14 @@ function spreadTrend(people, targetTrend, viral) {
 function countGrey(people) {
   let count = 0;
   for (let i = 0; i < people.length; i++) {
-    if (people[i].trend === "#777") {
+    if (people[i].trend === "none") {
       count++;
     }
   }
   return count;
 }
 
-// Pick a random color
+// Pick a random trend
 function randomTrend() {
   const trends = [
     "baseball", "cape", "crown", "handbag", 
@@ -78,20 +106,21 @@ function createPerson(id) {
   };
 }
 
-function Person({ person, conformity, frozen, focused, onCapture }) {
+function Person({ person, conformity, frozen, focused, onCapture, showSad }) {
+  // Show the person's actual trend (no conformity override)
   let trendToShow = person.trend;
 
-  // If society is very conformist, make it grey / none
-  if (conformity > 0.7) {
-    trendToShow = "none";
-  }
+  // Use sad images if showSad is true, otherwise use happy images
+  const imageSet = showSad ? sadTrendImages : trendImages;
+  const imgSrc = imageSet[trendToShow] || trendImages["none"];
 
-  const imgSrc = trendImages[trendToShow] || trendImages["none"];
+  // Only allow clicks if the person has a real trend (not "none" which means grey/no trend)
+  const clickable = person.trend !== "none";
 
   return (
     <div
       onClick={(e) => {
-        if (trendToShow !== "none") {
+        if (clickable) {
           onCapture(person, e);
         }
       }}
@@ -99,22 +128,20 @@ function Person({ person, conformity, frozen, focused, onCapture }) {
         position: "absolute",
         left: person.x + "%",
         top: person.y + "%",
-        width: 40,
-        height: 40,
-        cursor: trendToShow !== "none" ? "crosshair" : "default",
-        transform: "scale(1)",
-        outline: focused ? "3px solid red" : "none",
-        outlineOffset: "4px",
+        width: PERSON_SIZE,
+        height: PERSON_SIZE,
+        cursor: clickable ? "crosshair" : "default",
+        pointerEvents: clickable ? "auto" : "none",
         transition: frozen
-          ? "transform 0.15s ease, outline 0.15s ease"
+          ? "transform 0.15s ease"
           : "all 0.5s ease",
-        zIndex: focused ? 10 : 1,
+        zIndex: 1,
       }}
     >
-      <img 
-        src={imgSrc} 
-        alt={trendToShow} 
-        style={{ width: "100%", height: "100%" }} 
+      <img
+        src={imgSrc}
+        alt={trendToShow}
+        style={{ width: "100%", height: "100%" }}
       />
     </div>
   );
@@ -126,7 +153,7 @@ function getTrendAndPercentage(people) {
 
   for (let i = 0; i < people.length; i++) {
     let trend = people[i].trend;
-    // Include grey in counts now
+    // Include all trends in counts
     if (!trendCounts[trend]) {
       trendCounts[trend] = 1;
     } else {
@@ -134,7 +161,7 @@ function getTrendAndPercentage(people) {
     }
   }
 
-  let dominantTrend = "None";
+  let dominantTrend = "none";
   let maxCount = 0;
 
   for (let color in trendCounts) {
@@ -144,10 +171,8 @@ function getTrendAndPercentage(people) {
     }
   }
 
-  let percentage = 0;
-  if (dominantTrend !== "None") {
-    percentage = Math.round((maxCount / people.length) * 100);
-  }
+  // Always calculate percentage, even for "none"
+  let percentage = Math.round((maxCount / people.length) * 100);
 
   return { trend: dominantTrend, percentage: percentage };
 }
@@ -160,6 +185,7 @@ export default function App() {
   const [focusedId, setFocusedId] = useState(null);
   const [narration, setNarration] = useState("Click someone to take a picture.");
   const [captureUI, setCaptureUI] = useState(null);
+  const [showSad, setShowSad] = useState(false);
   const worldRef = useRef(null);
 
   // Initialize people
@@ -199,6 +225,8 @@ export default function App() {
   function capture(person, e) {
     if (frozen) return;
 
+    const trendKey = person.trend;
+    const trendLabel = trendNames[trendKey];
     setFrozen(true);
     setFocusedId(person.id);
 
@@ -211,14 +239,13 @@ export default function App() {
       viral = Math.random() < appeal;
     }
 
-    setNarration(viral ? "They love this trend." : "They reject this trend.");
-
-    // const newPeople = spreadTrend(people, person.trend, viral);
-    // setPeople(newPeople);
-
-    // // Update conformity
-    // const trendInfo = getTrendAndPercentage(newPeople);
-    // setSociety({ conformity: trendInfo.percentage / 100 });
+    if (viral) {
+      setNarration(`Society loves ${trendLabel}.`);
+      setShowSad(false); // Happy images
+    } else {
+      setNarration(`Society rejects ${trendLabel}.`);
+      setShowSad(true); // Sad images
+    }
 
     // Instagram overlay position
     const world = worldRef.current.getBoundingClientRect();
@@ -255,6 +282,7 @@ export default function App() {
       setFocusedId(null);
       setNarration("Click someone to take a picture.");
       setCaptureUI(null);
+      setShowSad(false); // Return to happy images
     }, FREEZE_DURATION);
   }
 
@@ -265,8 +293,17 @@ export default function App() {
 
   return (
     <div className="container">
-      <p className="status">{narration}</p>
+    <p className="status">{narration}</p>
 
+    {/* Wrapper that reserves space so scaling never overlaps text */}
+    <div
+      style={{
+        paddingTop:40,
+        paddingBottom: 40,
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
       <div
         ref={worldRef}
         className="world"
@@ -284,6 +321,7 @@ export default function App() {
             frozen={frozen}
             focused={p.id === focusedId}
             onCapture={capture}
+            showSad={showSad}
           />
         ))}
 
@@ -317,14 +355,24 @@ export default function App() {
                 }}
               >
                 <img
-                  src={captureUI.viral ? "/instagram-like.png" : "/instagram-dislike.png"}
+                  src={
+                    captureUI.viral
+                      ? "/instagram-like.png"
+                      : "/instagram-dislike.png"
+                  }
                   alt={captureUI.viral ? "like" : "dislike"}
                   style={{ width: 16, height: 16 }}
                 />
                 {captureUI.likes.toLocaleString()}
               </div>
 
-              <div style={{ fontSize: 12, opacity: 0.9 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    opacity: 0.9,
+                    color: "#ff69b4"
+                  }}
+                >
                 {captureUI.comments.slice(0, 2).map((c, i) => (
                   <div
                     key={i}
@@ -349,22 +397,14 @@ export default function App() {
           </div>
         )}
       </div>
+    </div>
 
-      <p className="status">
-        Current Trend:{" "}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-          <span
-            style={{
-              display: "inline-block",
-              width: 16,
-              height: 16,
-              backgroundColor: dominantTrend,
-              border: "1px solid white",
-            }}
-          />
-          {dominantTrend} ({trendPercentage}%)
-        </span>
-      </p>
+    <p className="status">
+      Current Trend:{" "}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        {trendNames[dominantTrend] || "None"} ({trendPercentage}%)
+      </span>
+    </p>
     </div>
   );
 }
