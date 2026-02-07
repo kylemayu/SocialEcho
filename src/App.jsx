@@ -1,4 +1,9 @@
 import { useEffect, useState, useRef } from "react";
+const SCENES = {
+  INTRO: "intro",
+  GAMEPLAY: "gameplay",
+  ENDING: "ending",
+};
 
 
 // Settings for our simulation
@@ -68,9 +73,10 @@ function createPerson(id) {
    id: id,
    x: Math.random() * 85,
    y: Math.random() * 85,
-   trend: randomColor(),
+   trend: Math.floor(Math.random() * 10),
+   mood: "happy",
    trendiness: Math.random(),
-   sprite:"/character-base.png"
+   //sprite:"/character-base.png"
  };
 }
 
@@ -168,6 +174,7 @@ export default function App() {
  const [narration, setNarration] = useState("Click someone to take a picture.");
  const [captureUI, setCaptureUI] = useState(null);
  const worldRef = useRef(null);
+ const [scene, setScene] = useState(SCENES.INTRO);
 
 
  // Initialize people
