@@ -171,6 +171,38 @@ function getTrendAndPercentage(people) {
 }
 
 
+function StartScene({onBegin}) {
+  return (
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#000", // temporary
+      }}
+    >
+      <ImageButton
+        normal="/start-unpush.png"
+        pushed="/start-push.png"
+        onClick={onBegin}
+        width={220}
+      />
+    </div>
+  );
+}
+
+function EndScene({onPlayAgain, onExit }) {
+  return (
+    <div style={{ padding: 40, textAlign: "center" }}>
+      <h1>END (TEMP)</h1>
+      <button onClick={onPlayAgain}>Play Again</button>
+      <br /><br />
+      <button onClick={onExit}>Exit to Intro</button>
+    </div>
+  );
+}
 // Main app
 export default function App() {
  const [people, setPeople] = useState([]);
@@ -291,6 +323,54 @@ export default function App() {
     }, FREEZE_DURATION);
   }
 
+  function beginGame() {
+  resetGame();
+  setScene(SCENES.GAMEPLAY);
+}
+
+function exitGame() {
+  setScene(SCENES.ENDING);
+}
+
+function playAgain() {
+  resetGame();
+  setScene(SCENES.GAMEPLAY);
+}
+
+function resetGame() {
+  const resetPeople = [];
+  for (let i = 0; i < PEOPLE_COUNT; i++) {
+    resetPeople.push(createPerson(i));
+  }
+  setPeople(resetPeople);
+  setSociety({conformity:0});
+  setFrozen(false);
+  setFocusedId(null);
+  setNarration("Click someone to take a picture.");
+  setCaptureUI(null);
+}
+
+function ImageButton({ normal, pushed, onClick, width = 200 }) {
+  const [isPushed, setIsPushed] = useState(false);
+
+  return (
+    <img
+      src={isPushed ? pushed : normal}
+      alt="button"
+      style={{
+        width,
+        cursor: "pointer",
+        userSelect: "none",
+      }}
+      onMouseDown={() => setIsPushed(true)}
+      onMouseUp={() => setIsPushed(false)}
+      onMouseLeave={() => setIsPushed(false)}
+      onClick={onClick}
+      draggable={false}
+    />
+  );
+}
+
  // Calculate current trend info
  const trendInfo = getTrendAndPercentage(people);
  const dominantTrend = trendInfo.trend;
@@ -299,6 +379,22 @@ export default function App() {
 
  return (
    <div className="container">
+    {scene === SCENES.INTRO &&  (
+      <StartScene onBegin={beginGame}/>
+    )}
+
+    {scene === SCENES.GAMEPLAY && (
+      <button
+    style={{ position: "absolute", top: 10, right: 10, zIndex: 100 }}
+    onClick={exitGame}
+      >
+        Exit
+      </button>
+    )}
+
+    {scene === SCENES.ENDING && (
+      <EndScene onPlayAgain={playAgain} onExit={() => setScene(SCENES.INTRO)}/>
+    )}
      <p className="status">{narration}</p>
 
 
