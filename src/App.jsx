@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 // Settings for our simulation
 const PEOPLE_COUNT = 35;
 const FREEZE_DURATION = 3000;
-const PERSON_SIZE = 20;
+const PERSON_SIZE = 50;
 const FRAME_SIZE = 120;
 
 
@@ -70,6 +70,7 @@ function createPerson(id) {
    y: Math.random() * 85,
    trend: randomColor(),
    trendiness: Math.random(),
+   sprite:"/character-base.png"
  };
 }
 
@@ -102,8 +103,12 @@ function Person({ person, conformity, frozen, focused, onCapture }) {
        top: person.y + "%",
        width: PERSON_SIZE,
        height: PERSON_SIZE,
-       backgroundColor: displayTrend,
-       borderRadius: radius,
+
+      backgroundImage: `url(${person.sprite})`,
+      backgroundSize: "contain",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "center",
+
        cursor: displayTrend !== "#777" ? "crosshair" : "default",
        transform: focused ? "scale(1.8)" : "scale(1)",
        outline: focused ? "3px solid red" : "none",
@@ -322,13 +327,13 @@ export default function App() {
            />
 
 
-           <div style={{ textAlign: "center", marginTop: 6 }}>
+           <div style={{ textAlign: "left", marginTop: 6 }}>
              <div
                style={{
-                 color: "white",
+                 color: "black",
                  fontSize: 14,
                  display: "flex",
-                 alignItems: "center",
+                 alignItems: "left",
                  justifyContent: "center",
                  gap: 4,
                }}
@@ -342,7 +347,7 @@ export default function App() {
              </div>
 
 
-             <div style={{ fontSize: 12, opacity: 0.9 }}>
+             <div style={{ fontSize: 12, opacity: 0.9, color: "black" }}>
                {captureUI.comments.slice(0, 2).map((c, i) => (
                  <div
                    key={i}

@@ -5,7 +5,7 @@
 
 body {
   margin: 0;
-  background: #111;
+  background: #9c8787;
   color: #eee;
 }
 
@@ -24,7 +24,7 @@ body {
   max-width: 700px;
   height: 60vh;
   border: 1px solid #333;
-  background: #000000;
+  background: #eee;
   overflow: visible;
 
   
