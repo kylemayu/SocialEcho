@@ -72,7 +72,7 @@ function createPerson(id) {
   };
 }
 
-// --- Person sprite ---
+// person sprite
 function Person({ person, conformity, frozen, focused, onCapture }) {
   const color = conformity > 0.7 ? "#777" : person.color;
   const radius = conformity > 0.7 ? 3 : 12;
@@ -132,7 +132,6 @@ export default function App() {
   const worldRef = useRef(null);
 
 
-  // --- Movement loop ---
   useEffect(() => {
     if (frozen) return;
 
@@ -200,7 +199,6 @@ export default function App() {
       conformity: Math.min(1, s.conformity + (viral ? 0.12 : 0.04)),
     }));
 
-    // 🔥 NEW: show Instagram overlay
     setCaptureUI({
       x: centerX,
       y: centerY,
@@ -220,7 +218,7 @@ export default function App() {
   const takePicture = () => {
     post();
   };
-  // --- Capture logic ---
+
   function zoom(person) {
     if (frozen) return;
 
@@ -283,7 +281,7 @@ export default function App() {
       animation: "pop 0.25s ease-out",
     }}
   >
-    {/* FRAME (this is what gets centered) */}
+  
     <img
       src="/instagram-frame.png"
       alt="capture frame"
@@ -294,7 +292,7 @@ export default function App() {
       }}
     />
 
-    {/* META floats below, does NOT affect centering */}
+
     <div style={{ textAlign: "center", marginTop: 6 }}>
       <div style={{ color: "white", fontSize: 14 }}>
         ❤️ {captureUI.likes.toLocaleString()}
