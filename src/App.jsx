@@ -3,7 +3,8 @@ import { useEffect, useState, useRef } from "react";
 const PEOPLE_COUNT = 50;
 const FREEZE_DURATION = 3000;
 const PERSON_SIZE = 20;
-const FRAME_SIZE = 120;
+const FRAME_HEIGHT = 150;
+const FRAME_WIDTH = 120
 
 function spreadColor(people, targetColor, viral) {
   return people.map((p) => {
@@ -270,24 +271,24 @@ export default function App() {
           />
         ))}
    {captureUI && (
-  <div
-    style={{
-      position: "absolute",
-      left: captureUI.x,
-      top: captureUI.y + 25,
-      transform: "translate(-50%, -50%)",
-      pointerEvents: "none",
-      zIndex: 20,
-      animation: "pop 0.25s ease-out",
-    }}
-  >
+    <div
+      style={{
+        position: "absolute",
+        left: captureUI.x,
+        top: captureUI.y + 25,
+        transform: "translate(-50%, -50%)",
+        pointerEvents: "none",
+        zIndex: 20,
+        animation: "pop 0.25s ease-out",
+      }}
+    >
   
     <img
       src="/instagram-frame.png"
       alt="capture frame"
       style={{
-        width: FRAME_SIZE,
-        height: FRAME_SIZE,
+        width: FRAME_WIDTH,
+        height: FRAME_HEIGHT,
         display: "block",
       }}
     />
