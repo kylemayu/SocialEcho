@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const PEOPLE_COUNT = 60;
+const PEOPLE_COUNT = 50;
 const FREEZE_DURATION = 3000;
 
 function spreadColor(people, targetColor, viral) {
