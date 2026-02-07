@@ -21,8 +21,8 @@ body {
 .world {
   position: relative;
   width: 80vw;
-  max-width: 700px;
-  height: 60vh;
+  max-width: 900px;
+  height: 70vh;
   border: 1px solid #333;
   background: #eee;
   overflow: visible;
