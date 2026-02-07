@@ -12,6 +12,19 @@ const FREEZE_DURATION = 3000;
 const PERSON_SIZE = 50;
 const FRAME_SIZE = 120;
 
+const trendImages = {
+  baseball: "/happy_cap.png",
+  cape: "/happy_cape.png",
+  crown: "/happy_crown.png",
+  handbag: "/happy_handbag.png",
+  mohawk: "/happy_mohawk.png",
+  mustache: "/happy_mustache.png",
+  ponytail: "/happy_ponytail.png",
+  scarf: "/happy_scarf.png",
+  sunglasses: "/happy_glasses.png",
+  tophat: "/happy_tophat.png",
+  none: "/shocked.png"
+};
 
 // Spread a trend to other people (or reject it)
 function spreadTrend(people, targetTrend, viral) {
@@ -56,76 +69,69 @@ function countGrey(people) {
 
 
 // Pick a random color
-function randomColor() {
- const colors = [
-   "#ff4d4d", "#4d79ff", "#4dff88", "#c44dff", "#ffd24d",
-   "#4dd2ff", "#ff4da6", "#4dffb3", "#ff944d", "#4d66ff",
-   "#b34dff", "#ffb34d", "#4dffa6", "#ff4db8", "#4dffff"
- ];
- const randomIndex = Math.floor(Math.random() * colors.length);
- return colors[randomIndex];
+function randomTrend() {
+  const trends = [
+    "baseball", "cape", "crown", "handbag", 
+    "mohawk", "mustache", "ponytail", "scarf", 
+    "sunglasses", "tophat"
+  ];
+
+  const randomIndex = Math.floor(Math.random() * trends.length);
+  return trends[randomIndex];
 }
 
 
-// Create a new person with random position and color
 function createPerson(id) {
- return {
-   id: id,
-   x: Math.random() * 85,
-   y: Math.random() * 85,
-   trend: Math.floor(Math.random() * 10),
-   mood: "happy",
-   trendiness: Math.random(),
-   //sprite:"/character-base.png"
- };
+  return {
+    id: id,
+    x: Math.random() * 85,
+    y: Math.random() * 85,
+    trend: randomTrend(),
+    trendiness: Math.random(),
+  };
 }
 
 
-// Person component
 function Person({ person, conformity, frozen, focused, onCapture }) {
- let displayTrend = person.trend;
+  let trendToShow = person.trend;
 
+  // If society is very conformist, make it grey / none
+  if (conformity > 0.7) {
+    trendToShow = "none";
+  }
 
- // If society is highly conformist, everything looks grey
- if (conformity > 0.7) {
-   displayTrend = "#777";
- }
+  const imgSrc = trendImages[trendToShow] || trendImages["none"];
 
-
- let radius = "50%";
-
-
- return (
-   <div
-     onClick={(e) => {
-       // Only allow clicking if the person is not grey
-       if (displayTrend !== "#777") {
-         onCapture(person, e);
-       }
-     }}
-     style={{
-       position: "absolute",
-       left: person.x + "%",
-       top: person.y + "%",
-       width: PERSON_SIZE,
-       height: PERSON_SIZE,
-
-      backgroundImage: `url(${person.sprite})`,
-      backgroundSize: "contain",
-      backgroundRepeat: "no-repeat",
-      backgroundPosition: "center",
-
-       cursor: displayTrend !== "#777" ? "crosshair" : "default",
-       transform: focused ? "scale(1.8)" : "scale(1)",
-       outline: focused ? "3px solid red" : "none",
-       outlineOffset: "4px",
-       transition: frozen
-         ? "transform 0.15s ease, outline 0.15s ease"
-         : "all 0.5s ease",
-       zIndex: focused ? 10 : 1,
-     }}
-   />
- );
+  return (
+    <div
+      onClick={(e) => {
+        if (trendToShow !== "none") {
+          onCapture(person, e);
+        }
+      }}
+      style={{
+        position: "absolute",
+        left: person.x + "%",
+        top: person.y + "%",
+        width: 40,
+        height: 40,
+        cursor: trendToShow !== "none" ? "crosshair" : "default",
+        transform: "scale(1)",
+        outline: focused ? "3px solid red" : "none",
+        outlineOffset: "4px",
+        transition: frozen
+          ? "transform 0.15s ease, outline 0.15s ease"
+          : "all 0.5s ease",
+        zIndex: focused ? 10 : 1,
+      }}
+    >
+      <img 
+        src={imgSrc} 
+        alt={trendToShow} 
+        style={{ width: "100%", height: "100%" }} 
+      />
+    </div>
+  );
 }
 
 
@@ -238,14 +244,12 @@ export default function App() {
    setNarration(viral ? "They love this trend." : "They reject this trend.");
 
 
-   const newPeople = spreadTrend(people, person.trend, viral);
-   setPeople(newPeople);
+    // const newPeople = spreadTrend(people, person.trend, viral);
+    // setPeople(newPeople);
 
-
-   // Update conformity
-   const trendInfo = getTrendAndPercentage(newPeople);
-   setSociety({ conformity: trendInfo.percentage / 100 });
-
+    // // Update conformity
+    // const trendInfo = getTrendAndPercentage(newPeople);
+    // setSociety({ conformity: trendInfo.percentage / 100 });
 
    // Instagram overlay position
    const world = worldRef.current.getBoundingClientRect();
@@ -253,17 +257,16 @@ export default function App() {
    const centerY = (person.y / 100) * world.height + PERSON_SIZE / 2;
 
 
-   // Fake engagement
-   let likes;
-   let comments;
-   if (viral) {
-     likes = Math.floor(Math.random() * (PEOPLE_COUNT - 20 + 1)) + 20;
-     comments = ["I LOVE THIS TREND", "Obsessed", "stealing this"];
-   } else {
-     likes = Math.floor(Math.random() * 20 + 1);
-     comments = ["ew", "absolutely not", "this is sad"];
-   }
-
+    // Fake engagement
+    let likes;
+    let comments;
+    if (viral) {
+      likes = (Math.floor(Math.random() * (PEOPLE_COUNT - 20 + 1)) + 20) * 1000;
+      comments = ["I LOVE THIS TREND", "Obsessed", "stealing this"];
+    } else {
+      likes = Math.floor(Math.random() * 20 + 1);
+      comments = ["ew", "absolutely not", "this is sad"];
+    }
 
    setCaptureUI({
      x: centerX,
@@ -274,14 +277,19 @@ export default function App() {
    });
 
 
-   setTimeout(() => {
-     setFrozen(false);
-     setFocusedId(null);
-     setNarration("Click someone to take a picture.");
-     setCaptureUI(null);
-   }, FREEZE_DURATION);
- }
+    setTimeout(() => {
+      const updatedPeople = spreadTrend(people, person.trend, viral);
+      setPeople(updatedPeople);
 
+      const trendInfo = getTrendAndPercentage(updatedPeople);
+      setSociety({ conformity: trendInfo.percentage / 100 });
+
+      setFrozen(false);
+      setFocusedId(null);
+      setNarration("Click someone to take a picture.");
+      setCaptureUI(null);
+    }, FREEZE_DURATION);
+  }
 
  // Calculate current trend info
  const trendInfo = getTrendAndPercentage(people);
